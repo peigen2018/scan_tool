@@ -1,9 +1,21 @@
 [
   {
     "request": {
-      "url": "https://10.92.2.196/"
+      "url": "https://10.92.2.233:4430/admin/",
+      "method": "get"
     },
     "payloads": {},
-    "checks": []
+    "checks": [
+      {
+        "place": "status",
+        "rel": "BT",
+        "desired": ["200", "202"]
+      }
+    ],
+    "responses": [
+      {
+        "type": "status"
+      }
+    ]
   }
 ]
