@@ -7,14 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CompareUtilsTests {
-
-
     @Test
-    public void textCompareNum() {
-        List<String> strings = new ArrayList<>();
-        strings.add("200");
-        strings.add("210");
-        Assertions.assertTrue(CompareUtils.compareNumber("eq", strings, "200"));
+    public void test(){
 
+        List<String> ex = new ArrayList<>();
+        ex.add("200");
+
+        Assertions.assertTrue(CompareUtils.compareNumber("eq",ex,"200"));
+        Assertions.assertFalse(CompareUtils.compareNumber("eq",ex,"201"));
     }
 }

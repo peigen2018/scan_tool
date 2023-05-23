@@ -1,3 +1,6 @@
 rootProject.name = 'scan-tools'
 include 'bp-poc-runner'
 include 'web-engine'
+include 'web-engine'
+include 'bp-poc-runner'
+

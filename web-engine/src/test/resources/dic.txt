@@ -3810,7 +3810,7 @@ artifactory/
 artifacts/
 artikeladmin
 as-admin
-asdf.php
+Tests.php
 asp.aspx
 asp/
 aspnet_client

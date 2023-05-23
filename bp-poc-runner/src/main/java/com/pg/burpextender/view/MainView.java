@@ -1,11 +1,7 @@
 package com.pg.burpextender.view;
 
-import com.pg.burpextender.processor.ScanHolder;
-
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainView {
 

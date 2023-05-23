@@ -5,11 +5,9 @@ import java.util.List;
 public class CompareUtils {
     public static boolean compareNumber(String type, List<String> expects, String actual) {
 
-//        EQ|GT|LT|GE|LE|BE|REG
-
         if ("BE".equalsIgnoreCase(type)) {
-            return Double.valueOf(actual).compareTo(new Double(expects.get(0))) >= 0
-                    && Double.valueOf(actual).compareTo(new Double(expects.get(0))) <= 0;
+            return Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) >= 0
+                    && Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) <= 0;
         }
 
         String expect = expects.get(0);

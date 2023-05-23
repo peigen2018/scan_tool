@@ -3,7 +3,6 @@ package com.pg.burpextender.processor;
 import burp.IBurpExtenderCallbacks;
 import burp.IInterceptedProxyMessage;
 import burp.IProxyListener;
-import com.pg.burpextender.processor.ScanHolder;
 import com.pg.burpextender.view.MainView;
 import org.apache.commons.lang3.StringUtils;
 
