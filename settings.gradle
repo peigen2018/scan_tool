@@ -1,0 +1,4 @@
+rootProject.name = 'scan-tools'
+include 'bp-poc-runner'
+include 'web-engine'
+

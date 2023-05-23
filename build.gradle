@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group 'com.pg'
+version '1.0.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
+}
