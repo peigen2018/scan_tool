@@ -2,6 +2,7 @@ package com.pg.web.rule;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.pg.web.util.CompareUtils;
 import com.pg.web.util.HttpUtils;
 import org.apache.http.StatusLine;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -106,17 +107,18 @@ public class RuleHandler {
         }
     }
 
+
     private RuleResult.ResultInfo statusCheck(StatusLine statusLine, RuleInfo.CheckInfo check) {
         RuleResult.ResultInfo.ResultInfoBuilder<?, ?> builder = RuleResult.ResultInfo.builder();
 
+        builder.pass(true);
 
-        if ("eq".equalsIgnoreCase(check.getRel())) {
-            if (!String.valueOf(statusLine.getStatusCode()).equals(check.getDesired())) {
-                builder.pass(false)
-                        .content(MessageFormat.format("expect:{0} actual:{0}", check.getDesired(), statusLine.getStatusCode()));
-            }
+        boolean pass = CompareUtils.compareNumber(check.getRel(), check.getDesired(), String.valueOf(statusLine.getStatusCode()));
+
+        if (!pass){
+            builder.pass(false)
+                    .content(MessageFormat.format("expect:{0} actual:{0}", check.getDesired(), statusLine.getStatusCode()));
         }
-
 
         return builder.build();
     }

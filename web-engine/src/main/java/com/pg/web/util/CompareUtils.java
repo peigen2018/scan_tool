@@ -7,7 +7,7 @@ public class CompareUtils {
 
         if ("BE".equalsIgnoreCase(type)) {
             return Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) >= 0
-                    && Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) <= 0;
+                    && Double.valueOf(actual).compareTo(Double.valueOf(expects.get(1))) <= 0;
         }
 
         String expect = expects.get(0);

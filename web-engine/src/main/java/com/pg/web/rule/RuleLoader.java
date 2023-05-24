@@ -15,18 +15,10 @@ public class RuleLoader {
 
         byte[] bytes = Files.readAllBytes(Paths.get(jsonFilePath));
 
-
         String content = new String(bytes, StandardCharsets.UTF_8);
-
 
         List<RuleInfo> ruleInfos = JSON.parseArray(content, RuleInfo.class);
 
-        System.out.println(ruleInfos);
         return ruleInfos;
-    }
-
-
-    public static void main(String[] args) throws IOException {
-
     }
 }

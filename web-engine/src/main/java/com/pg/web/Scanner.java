@@ -13,7 +13,7 @@ public class Scanner {
 
     public static RuleHandler initScanQueue() throws IOException {
 
-        List<RuleInfo> ruleInfos = new RuleLoader().loadByFile("E:\\src\\my\\scan_tool\\web-engine\\src\\main\\resources\\rule.json");
+        List<RuleInfo> ruleInfos = new RuleLoader().loadByFile("E:\\project\\myproject\\scan_tool\\web-engine\\src\\main\\resources\\rule.json");
 
         RuleHandler ruleHandler = new RuleHandler(ruleInfos.get(0));
 
