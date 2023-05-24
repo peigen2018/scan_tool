@@ -2,35 +2,40 @@ package com.pg.web.rule;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.pg.web.common.exception.UnsupportedTypeException;
 import com.pg.web.util.CompareUtils;
-import com.pg.web.util.HttpUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class RuleHandler {
     private int idx;
 
     protected RuleHandler next;
 
-    private RuleInfo ruleInfo;
+    private final RuleInfo ruleInfo;
 
     private RuleResult result;
 
-    public RuleHandler(RuleInfo ruleInfo) {
+    private final HttpClient httpClient;
+
+
+    public RuleHandler(RuleInfo ruleInfo, HttpClient httpClient) {
         this.ruleInfo = ruleInfo;
+        this.httpClient = httpClient;
     }
 
     public void setNext(RuleHandler next) {
@@ -45,11 +50,11 @@ public class RuleHandler {
         }
     }
 
-    public void check() throws UnsupportedEncodingException, URISyntaxException {
+    public void check() throws Exception {
         this.check(null);
     }
 
-    public void check(RuleResult preRuleResult) throws URISyntaxException, UnsupportedEncodingException {
+    public void check(RuleResult preRuleResult) throws Exception {
 
         RuleInfo.Request request = ruleInfo.getRequest();
 
@@ -60,7 +65,6 @@ public class RuleHandler {
             case GET:
                 httpRequest = buildGetMethod(request);
                 break;
-
             case POST:
                 httpRequest = buildPostMethod(request);
                 break;
@@ -74,33 +78,47 @@ public class RuleHandler {
                 throw new UnsupportedOperationException();
         }
 
+        RuleResult.RuleResultBuilder<?, ?> pass = RuleResult.builder().pass(true);
 
-        try (CloseableHttpClient closeableHttpClient = HttpUtils.wrapClient(true)) {
+        List<RuleResult.ResultInfo> checkResult = new ArrayList<>();
+        pass.checkResult(checkResult);
 
+        try {
 
             List<RuleInfo.CheckInfo> checks = ruleInfo.getChecks();
-            StatusLine statusLine = closeableHttpClient.execute(httpRequest).getStatusLine();
+            HttpResponse response = httpClient.execute(httpRequest);
+            StatusLine statusLine = response.getStatusLine();
 
 
-            RuleResult.RuleResultBuilder<?, ?> pass = RuleResult.builder().pass(true);
             checks.stream().forEach(check -> {
+                String place = check.getPlace().toLowerCase();
 
-
-                switch (check.getPlace().toLowerCase()) {
+                RuleResult.ResultInfo resultInfo;
+                switch (place) {
                     case "status":
-                        statusCheck(statusLine, check);
+                        resultInfo = checkStatus(response, check);
                         break;
+                    case "response_body":
+                        resultInfo = checkBody(response, check);
+                        break;
+                    case "header":
+                        resultInfo = checkHeader(response, check);
+                        break;
+                    default:
+                        throw new UnsupportedTypeException("un supported type" + place);
                 }
+
+                if (!resultInfo.isPass()) {
+                    pass.pass(false);
+                }
+                checkResult.add(resultInfo);
             });
-
-
-            this.result = pass.build();
-
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+        this.result = pass.build();
 
         if (!Objects.isNull(next)) {
             next.check(this.result);
@@ -108,21 +126,66 @@ public class RuleHandler {
     }
 
 
-    private RuleResult.ResultInfo statusCheck(StatusLine statusLine, RuleInfo.CheckInfo check) {
-        RuleResult.ResultInfo.ResultInfoBuilder<?, ?> builder = RuleResult.ResultInfo.builder();
+    private RuleResult.ResultInfo checkStatus(HttpResponse response, RuleInfo.CheckInfo check) {
 
-        builder.pass(true);
 
-        boolean pass = CompareUtils.compareNumber(check.getRel(), check.getDesired(), String.valueOf(statusLine.getStatusCode()));
+        int statusCode = response.getStatusLine().getStatusCode();
+        boolean pass = CompareUtils.compareNumber(check.getRel(), check.getDesired(), String.valueOf(statusCode));
 
-        if (!pass){
-            builder.pass(false)
-                    .content(MessageFormat.format("expect:{0} actual:{0}", check.getDesired(), statusLine.getStatusCode()));
-        }
-
-        return builder.build();
+        return RuleResult.ResultInfo.builder()
+                .pass(pass)
+                .content(MessageFormat.format("expect:{0} actual:{1}", check.getDesired(), statusCode)).build();
     }
 
+    private RuleResult.ResultInfo checkBody(HttpResponse response, RuleInfo.CheckInfo check) {
+
+        String responseBody  = null;
+        try {
+            responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        boolean pass = CompareUtils.compareString(check.getRel(), check.getDesired().get(0), responseBody);
+
+        return RuleResult.ResultInfo.builder()
+                .pass(pass)
+                .content(MessageFormat.format("expect:{0} actual:{1}", check.getDesired(), responseBody)).build();
+
+
+    }
+
+
+    private RuleResult.ResultInfo checkHeader(HttpResponse response, RuleInfo.CheckInfo check) {
+
+
+        List<String> desired = check.getDesired();
+
+        if(Objects.isNull(desired) || desired.size() != 2){
+            throw new UnsupportedTypeException("desired must have two values");
+        }
+
+
+        Header[] headers = response.getHeaders(desired.get(0));
+        boolean isPass = false;
+        for (Header header : headers) {
+            //If the header meets the specified condition, pass.
+            if(header.getName().equals(desired.get(0))){
+                if(CompareUtils.compareString(check.getRel(), check.getDesired().get(1), header.getValue())){
+                    isPass =true;
+                    break;
+                }
+            }
+        }
+
+        String content = null;
+        if(!isPass){
+            List<KeyAndValue> actual = Arrays.stream(headers).map(h -> new KeyAndValue(h.getName(), h.getValue())).collect(Collectors.toList());
+            content = MessageFormat.format("expect:{0} actual:{1}", check.getDesired(), actual);
+        }
+        return RuleResult.ResultInfo.builder()
+                .pass(isPass).content(content).build();
+    }
 
 
     private HttpUriRequest buildDeleteMethod(RuleInfo.Request request) {
@@ -159,10 +222,9 @@ public class RuleHandler {
         return httpRequest;
     }
 
-    private HttpUriRequest buildGetMethod(RuleInfo.Request request) throws URISyntaxException {
+    private HttpUriRequest buildGetMethod(RuleInfo.Request request) {
 
         HttpGet httpGet = new HttpGet(request.getUrl());
-
         BasicHeader[] basicHeaders = Optional.ofNullable(request.getHeads()).orElseGet(ArrayList::new)
                 .stream().map(e -> new BasicHeader(e.getKey(), e.getValue())).toArray(BasicHeader[]::new);
         httpGet.setHeaders(basicHeaders);

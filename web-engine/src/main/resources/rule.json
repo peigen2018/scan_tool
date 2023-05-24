@@ -1,20 +1,30 @@
 [
   {
     "request": {
-      "url": "https://10.92.2.233:4430/admin/",
+      "url": "http://10.47.136.3:8089/xss",
       "method": "get"
     },
     "payloads": {},
     "checks": [
       {
         "place": "status",
-        "rel": "BT",
-        "desired": ["200", "202"]
+        "rel": "lt",
+        "desired": ["300", ""]
+      },{
+        "place": "response_body",
+        "rel": "eq",
+        "desired": ["success"]
+      },{
+        "place": "header",
+        "rel": "eq",
+        "desired": ["Content-Type", "text/plain;charset=UTF-8"]
       }
     ],
-    "responses": [
+    "variable": [
       {
-        "type": "status"
+        "name": "status",
+        "place": "response_body",
+        "type": "all"
       }
     ]
   }

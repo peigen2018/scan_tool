@@ -1,35 +1,58 @@
 package com.pg.web.util;
 
+import com.pg.web.common.exception.UnsupportedTypeException;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
 
 public class CompareUtils {
     public static boolean compareNumber(String type, List<String> expects, String actual) {
 
-        if ("BE".equalsIgnoreCase(type)) {
-            return Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) >= 0
-                    && Double.valueOf(actual).compareTo(Double.valueOf(expects.get(1))) <= 0;
-        }
 
+
+        String lowerType = type.toLowerCase();
         String expect = expects.get(0);
         int compare = Double.valueOf(expect).compareTo(Double.valueOf(actual));
-        if ("EQ".equalsIgnoreCase(type)) {
-            return compare == 0;
+
+        if(StringUtils.isEmpty(expect) || StringUtils.isEmpty(actual)){
+            return false;
         }
 
-        if ("GT".equalsIgnoreCase(type)) {
-            return compare > 0;
+        switch (lowerType) {
+            case "be":
+                return Double.valueOf(actual).compareTo(Double.valueOf(expects.get(0))) >= 0
+                        && Double.valueOf(actual).compareTo(Double.valueOf(expects.get(1))) <= 0;
+            case "eq":
+                return compare == 0;
+            case "gt":
+                return compare < 0;
+            case "lt":
+                return compare > 0;
+            case "ge":
+                return compare >= 0;
+            case "le":
+                return compare <= 0;
+            default:
+                throw new UnsupportedTypeException("un support type:"+lowerType);
         }
-        if ("LT".equalsIgnoreCase(type)) {
-            return compare < 0;
-        }
-        if ("GE".equalsIgnoreCase(type)) {
-            return compare <= 0;
-        }
-        if ("LE".equalsIgnoreCase(type)) {
-            return compare >= 0;
+    }
+
+
+
+    public static boolean compareString(String type, String expect, String actual) {
+        String lowerType = type.toLowerCase();
+        if(StringUtils.isEmpty(expect) || StringUtils.isEmpty(actual)){
+            return false;
         }
 
 
-        return false;
+        switch (lowerType) {
+            case "eq":
+                return actual.equals(expect);
+            case "reg":
+                return actual.matches(expect);
+            default:
+                throw new UnsupportedTypeException("un support type:" + lowerType);
+        }
     }
 }
